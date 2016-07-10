@@ -84,6 +84,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         # override.vm.provision "shell", path: "playpen/vagrant-resize-disk.sh"
     end
 
+    dev.vm.provider "virtualbox" do |vb, override|
+      vb.memory = "2048"
+      VAGRANT_SYNCED_FOLDERS.each do |host_path, guest_path|
+        # Use the default.
+        override.vm.synced_folder host_path, guest_path, type: nil
+      end
+    end
+
     dev.vm.provider :docker do |d, override|
         override.vm.box = nil
         # Based on fedora official image, with vagrant's needs met:

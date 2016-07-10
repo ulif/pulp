@@ -22,6 +22,12 @@
               insertafter="^\[ usr_cert \]"
               line="subjectAltName=DNS:{{ansible_hostname}},DNS:{{ansible_fqdn}}"
 
+- name: Install lazy packages
+  dnf: name={{ item }} state=present
+  with_items:
+      - httpd
+      - mod_ssl
+
 - name: Create Apache certificate request
   command: >
     /usr/bin/openssl req -newkey rsa:2048 -keyout private/apachekey.pem -nodes -days 365 \
