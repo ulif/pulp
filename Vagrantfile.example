@@ -20,6 +20,11 @@ VAGRANT_SYNCED_FOLDERS = {
   #'.dnf-cache' => '/var/cache/dnf'
 }
 
+CLIENTS = {
+  'c1' => '192.168.3.11',
+  'c2' => '192.168.3.12',
+}
+
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
  # It is possible to use URLs to nightly images produced by the Fedora project here. You can find
  # the nightly composes here: https://kojipkgs.fedoraproject.org/compose/
@@ -32,8 +37,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
  # Comment out if you don't want Vagrant to add and remove entries from /etc/hosts for each VM.
  # requires the vagrant-hostmanager plugin to be installed
  if Vagrant.has_plugin?("vagrant-hostmanager")
-     config.hostmanager.enabled = true
-     config.hostmanager.manage_host = true
+     config.hostmanager.enabled = false
+     config.hostmanager.manage_host = false
+     config.hostmanager.manage_guest = true
+     config.hostmanager.ignore_private_ip = false
  end
 
  # Comment this line if you would like to disable the automatic update during provisioning
@@ -48,9 +55,23 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
      ansible.playbook = "playpen/ansible/vagrant-playbook.yml"
  end
 
+  # Create client boxes
+  CLIENTS.each do |name, ip|
+    config.vm.define name do |c|
+      c.vm.host_name = "%s.example.com" % name
+      c.vm.network :private_network, ip: ip
+      c.vm.provision :hosts, :sync_hosts => true
+      VAGRANT_SYNCED_FOLDERS.each do |host_path, guest_path|
+        c.vm.synced_folder host_path, guest_path
+      end
+    end
+  end
+
  # Create the "dev" box
- config.vm.define "dev" do |dev|
+ config.vm.define "dev", primary: true do |dev|
     dev.vm.host_name = "dev.example.com"
+    dev.vm.network :private_network, ip: "192.168.3.10"
+    dev.vm.provision :hosts, :sync_hosts => true
 
     VAGRANT_SYNCED_FOLDERS.each do |host_path, guest_path|
         # By default, Vagrant wants to mount with NFSv3, which will fail. Let's
